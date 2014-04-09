@@ -1,8 +1,16 @@
+[ -e boot.img ] && rm -f boot.img
+[ -e franco.Kernel-nightly-dt2w.zip ] && rm -f franco.Kernel-nightly-dt2w.zip
+make mrproper
+
 if [ $# -gt 0 ]; then
-echo $1 > .version
+VER=`expr $1 - 1`
+echo $VER > .version
 fi
 
-make -j16
+schedtool -B -n 1 -e ionice -n 1 make -j$(cat /proc/cpuinfo | grep "^processor" | wc -l) franco_defconfig
+schedtool -B -n 1 -e ionice -n 1 make -j$(cat /proc/cpuinfo | grep "^processor" | wc -l)
+
+if [ -e arch/arm/boot/zImage-dtb ]; then
 
 cp arch/arm/boot/zImage-dtb ../ramdisk_hammerhead/
 
@@ -18,14 +26,18 @@ rm -rf zImage
 
 cd ../hammerhead/
 
-zipfile="franco.Kernel-nightly.zip"
+zipfile="franco.Kernel-nightly-dt2w.zip"
 echo "making zip file"
+[ -e zip/boot.img ] && rm -f zip/boot.img
 cp boot.img zip/
-
-rm -rf ../ramdisk_hammerhead/boot.img
 
 cd zip/
 rm -f *.zip
 zip -r -9 $zipfile *
 rm -f /tmp/*.zip
 cp *.zip /tmp
+
+else
+
+echo "build failed"
+fi
